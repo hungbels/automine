@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "id": "automine-mod",
+  "version": "${version}",
+  "name": "AutoMine Mod",
+  "description": "Auto mining theo schematic, tu lap ho, tu leo len khi roi hang, tu an khi doi.",
+  "authors": ["you"],
+  "contact": {},
+  "license": "MIT",
+  "environment": "client",
+  "entrypoints": {
+    "client": [
+      "com.example.automine.AutoMineMod"
+    ]
+  },
+  "depends": {
+    "fabricloader": ">=0.16.0",
+    "minecraft": "~1.21.4",
+    "fabric-api": "*"
+  }
+}
