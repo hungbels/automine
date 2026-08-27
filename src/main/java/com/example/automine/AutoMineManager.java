@@ -223,7 +223,7 @@ public class AutoMineManager {
         state = State.EATING;
         for (int i = 0; i < 9; i++) {
             var stack = player.getInventory().getStack(i);
-            if (stack.getItem().isFood()) {
+            if (stack.get(net.minecraft.component.DataComponentTypes.FOOD) != null) {
                 player.getInventory().selectedSlot = i;
                 MinecraftClient client = MinecraftClient.getInstance();
                 if (client.interactionManager != null) {
