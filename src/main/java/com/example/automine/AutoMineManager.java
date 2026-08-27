@@ -7,6 +7,7 @@ import net.minecraft.item.Items;
 import net.minecraft.util.Hand;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
+import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
 
 import java.util.ArrayList;
@@ -49,6 +50,15 @@ public class AutoMineManager {
     // nguong hunger de kich hoat auto eat (0-20)
     private static final int EAT_THRESHOLD = 14;
 
+    // do tre giua cac hanh dong (tinh bang tick, 20 tick = 1 giay)
+    // tranh gui qua nhieu goi tin cung luc gay giat/lag khi player tu di chuyen
+    private static final int ACTION_COOLDOWN_TICKS = 5;
+    private int cooldownRemaining = 0;
+
+    // muc tieu di chuyen toi khi da dao xong 1 lop, null nghia la khong dang di chuyen
+    private Vec3d moveTarget = null;
+    private static final double MOVE_STEP = 0.2; // toc do buoc moi tick
+
     public void start(SchematicData schematic, BlockPos origin, Direction facing) {
         this.schematic = schematic;
         this.origin = origin;
@@ -71,6 +81,14 @@ public class AutoMineManager {
     public void tick(MinecraftClient client) {
         if (state == State.IDLE || client.player == null || client.world == null) return;
 
+        // Cho bot: chi hanh dong moi ACTION_COOLDOWN_TICKS tick, tranh gui
+        // qua nhieu goi tin lien tuc gay giat khi player tu dieu khien them
+        if (cooldownRemaining > 0) {
+            cooldownRemaining--;
+            return;
+        }
+        cooldownRemaining = ACTION_COOLDOWN_TICKS;
+
         ClientPlayerEntity player = client.player;
         World world = client.world;
 
@@ -86,15 +104,36 @@ public class AutoMineManager {
             return;
         }
 
+        // Neu dang trong qua trinh di chuyen toi lop tiep theo, uu tien xu ly truoc
+        if (moveTarget != null) {
+            moveTowardsTarget(player);
+            return;
+        }
+
         // Xu ly o hien tai theo dung schem
         processCurrentCell(player, world);
     }
 
-    private void processCurrentCell(ClientPlayerEntity player, World world) {
-        if (cellIndex >= CELL_ORDER.length) {
-            // Het 9 o cua lop nay va tat ca da khop schem -> sang lop moi
+    private void moveTowardsTarget(ClientPlayerEntity player) {
+        Vec3d current = player.getPos();
+        Vec3d diff = moveTarget.subtract(current);
+        double dist = diff.length();
+        if (dist < 0.15) {
+            player.setPosition(moveTarget.x, moveTarget.y, moveTarget.z);
+            moveTarget = null;
             layerIndex++;
             cellIndex = 0;
+            return;
+        }
+        Vec3d step = diff.normalize().multiply(Math.min(MOVE_STEP, dist));
+        player.setPosition(current.x + step.x, current.y + step.y, current.z + step.z);
+    }
+
+    private void processCurrentCell(ClientPlayerEntity player, World world) {
+        if (cellIndex >= CELL_ORDER.length) {
+            // Het 9 o cua lop nay va tat ca da khop schem -> di chuyen toi lop moi
+            BlockPos nextStand = origin.offset(facing, layerIndex + 1);
+            moveTarget = new Vec3d(nextStand.getX() + 0.5, player.getY(), nextStand.getZ() + 0.5);
             return;
         }
 
@@ -234,4 +273,4 @@ public class AutoMineManager {
         }
         state = State.MINING;
     }
-          }
+}
